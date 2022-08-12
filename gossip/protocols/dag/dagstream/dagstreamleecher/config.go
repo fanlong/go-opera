@@ -24,7 +24,7 @@ func DefaultConfig() Config {
 			ParallelChunksDownload: 6,
 			RecheckInterval:        10 * time.Millisecond,
 		},
-		RecheckInterval:      time.Second,
+		RecheckInterval:      100 * time.Millisecond,
 		BaseProgressWatchdog: time.Second * 5,
 		BaseSessionWatchdog:  time.Second * 30 * 5,
 		MinSessionRestart:    time.Second * 5,

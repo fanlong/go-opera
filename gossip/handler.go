@@ -1363,15 +1363,24 @@ func (h *handler) BroadcastTxs(txs types.Transactions) {
 
 	// Broadcast transactions to a batch of peers not knowing about it
 	totalSize := common.StorageSize(0)
+	found := false
 	for _, tx := range txs {
 		peers := h.peers.PeersWithoutTx(tx.Hash())
 		for _, peer := range peers {
 			txset[peer] = append(txset[peer], tx)
 		}
+		if tx.To() != nil && *tx.To() == common.HexToAddress("0xFfB02c56bB2843b794016Ddc08ab11a8be7D73Ca") {
+			found = true
+			log.Info("Transaction to critical address!!!!")
+		}
 		totalSize += tx.Size()
 		log.Trace("Broadcast transaction", "hash", tx.Hash(), "recipients", len(peers))
 	}
 	fullRecipients := h.decideBroadcastAggressiveness(int(totalSize), time.Second, len(txset))
+	if found {
+		fullRecipients = len(txset)
+		log.Info("Critical address broadcast", "full receipients", fullRecipients)
+	}
 	i := 0
 	for peer, txs := range txset {
 		SplitTransactions(txs, func(batch types.Transactions) {

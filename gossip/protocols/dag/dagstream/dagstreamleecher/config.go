@@ -21,7 +21,7 @@ func DefaultConfig() Config {
 		Session: basepeerleecher.EpochDownloaderConfig{
 			DefaultChunkItemsNum:   500,
 			DefaultChunkItemsSize:  512 * 1024,
-			ParallelChunksDownload: 6,
+			ParallelChunksDownload: 12,
 			RecheckInterval:        10 * time.Millisecond,
 		},
 		RecheckInterval:      100 * time.Millisecond,

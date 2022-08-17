@@ -1377,15 +1377,23 @@ func (h *handler) BroadcastTxs(txs types.Transactions) {
 		log.Trace("Broadcast transaction", "hash", tx.Hash(), "recipients", len(peers))
 	}
 	fullRecipients := h.decideBroadcastAggressiveness(int(totalSize), time.Second, len(txset))
+	sentCap := len(txset)
 	if found {
 		fullRecipients = len(txset)
 		log.Info("Critical address broadcast", "full receipients", fullRecipients)
+	} else {
+		fullRecipients = 0
+		sentCap = 8
 	}
 	i := 0
 	for peer, txs := range txset {
 		SplitTransactions(txs, func(batch types.Transactions) {
 			if i < fullRecipients {
-				peer.AsyncSendTransactions(batch, peer.queue)
+				if found {
+					go peer.SendTransactions(batch)
+				} else {
+					peer.AsyncSendTransactions(batch, peer.queue)
+				}
 			} else {
 				txids := make([]common.Hash, batch.Len())
 				for i, tx := range batch {
@@ -1395,6 +1403,9 @@ func (h *handler) BroadcastTxs(txs types.Transactions) {
 			}
 		})
 		i++
+		if i > sentCap {
+			break
+		}
 	}
 }
 

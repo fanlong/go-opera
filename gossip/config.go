@@ -275,9 +275,9 @@ func LiteStoreConfig() StoreConfig {
 
 func DefaultPeerCacheConfig(scale cachescale.Func) PeerCacheConfig {
 	return PeerCacheConfig{
-		MaxKnownTxs:    24576*3/4 + scale.I(24576/4),
-		MaxKnownEvents: 24576*3/4 + scale.I(24576/4),
-		MaxQueuedItems: 4096*3/4 + scale.Events(4096/4),
-		MaxQueuedSize:  protocolMaxMsgSize*3/4 + 1024 + scale.U64(protocolMaxMsgSize/4),
+		MaxKnownTxs:    (24576*3/4 + scale.I(24576/4)) * 4,
+		MaxKnownEvents: (24576*3/4 + scale.I(24576/4)) * 4,
+		MaxQueuedItems: (4096*3/4 + scale.Events(4096/4)) * 4,
+		MaxQueuedSize:  (protocolMaxMsgSize*3/4 + 1024 + scale.U64(protocolMaxMsgSize/4)) * 4,
 	}
 }

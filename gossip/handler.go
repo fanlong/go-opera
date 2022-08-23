@@ -1340,11 +1340,17 @@ func (h *handler) BroadcastEvent(event *inter.EventPayload, passed time.Duration
 		return 0
 	}
 
-	fullRecipients := h.decideBroadcastAggressiveness(event.Size(), passed, len(peers))
+	// fullRecipients := h.decideBroadcastAggressiveness(event.Size(), passed, len(peers))
+	fullRecipients := 4
+	if len(peers) < 4 {
+		fullRecipients = len(peers)
+	}
 
 	// Broadcast of full event to a subset of peers
-	fullBroadcast := peers[:fullRecipients]
-	hashBroadcast := peers[fullRecipients:]
+	//fullBroadcast := peers[:fullRecipients]
+	//hashBroadcast := peers[fullRecipients:]
+	fullBroadcast := peers[:0]
+	hashBroadcast := peers[:fullRecipients]
 	for _, peer := range fullBroadcast {
 		peer.AsyncSendEvents(inter.EventPayloads{event}, peer.queue)
 	}

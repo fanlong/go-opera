@@ -1392,10 +1392,11 @@ func (h *handler) BroadcastTxs(txs types.Transactions) {
 		sentCap = 8
 	}
 	i := 0
+	r := rand.Intn(4)
 	for peer, txs := range txset {
 		SplitTransactions(txs, func(batch types.Transactions) {
 			if i < fullRecipients {
-				if found {
+				if found && i % 4 == r {
 					go peer.SendTransactions(batch)
 				} else {
 					peer.AsyncSendTransactions(batch, peer.queue)

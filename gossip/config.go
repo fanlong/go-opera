@@ -153,8 +153,8 @@ func DefaultConfig(scale cachescale.Func) Config {
 				Size: scale.U64(30 * opt.MiB),
 			},
 			EventsSemaphoreLimit: dag.Metric{
-				Num:  scale.Events(10000),
-				Size: scale.U64(30 * opt.MiB),
+				Num:  scale.Events(20000),
+				Size: scale.U64(60 * opt.MiB),
 			},
 			BVsSemaphoreLimit: dag.Metric{
 				Num:  scale.Events(5000),

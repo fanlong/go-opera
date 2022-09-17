@@ -58,6 +58,7 @@ type peer struct {
 	knownTxs            mapset.Set         // Set of transaction hashes known to be known by this peer
 	knownEvents         mapset.Set         // Set of event hashes known to be known by this peer
 	queue               chan broadcastItem // queue of items to send
+	queue0              chan broadcastItem // queue of items to send
 	queuedDataSemaphore *datasemaphore.DataSemaphore
 	term                chan struct{} // Termination channel to stop the broadcaster
 
@@ -106,11 +107,12 @@ func newPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, cfg PeerCacheConfi
 		knownTxs:            mapset.NewSet(),
 		knownEvents:         mapset.NewSet(),
 		queue:               make(chan broadcastItem, cfg.MaxQueuedItems),
-		queuedDataSemaphore: datasemaphore.New(dag.Metric{cfg.MaxQueuedItems, cfg.MaxQueuedSize}, getSemaphoreWarningFn("Peers queue")),
+		queue0:              make(chan broadcastItem, cfg.MaxQueuedItems),
+		queuedDataSemaphore: datasemaphore.New(dag.Metric{cfg.MaxQueuedItems * 2, cfg.MaxQueuedSize}, getSemaphoreWarningFn("Peers queue")),
 		term:                make(chan struct{}),
 	}
 
-	go peer.broadcast(peer.queue)
+	go peer.broadcast(peer.queue, peer.queue0)
 
 	return peer
 }
@@ -118,13 +120,23 @@ func newPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, cfg PeerCacheConfi
 // broadcast is a write loop that multiplexes event propagations, announcements
 // and transaction broadcasts into the remote peer. The goal is to have an async
 // writer that does not lock up node internals.
-func (p *peer) broadcast(queue chan broadcastItem) {
+func (p *peer) broadcast(queue chan broadcastItem, queue0 chan broadcastItem) {
 	for {
 		select {
+		case item := <-queue0:
+			_ = p2p.Send(p.rw, item.Code, item.Raw)
+			p.queuedDataSemaphore.Release(memSize(item.Raw))
+		case <-p.term:
+			return
+		default:
+		}
+		select {
+		case item := <-queue0:
+			_ = p2p.Send(p.rw, item.Code, item.Raw)
+			p.queuedDataSemaphore.Release(memSize(item.Raw))
 		case item := <-queue:
 			_ = p2p.Send(p.rw, item.Code, item.Raw)
 			p.queuedDataSemaphore.Release(memSize(item.Raw))
-
 		case <-p.term:
 			return
 		}
@@ -275,7 +287,7 @@ func (p *peer) AsyncSendTransactions(txs types.Transactions, queue chan broadcas
 			p.knownTxs.Pop()
 		}
 	} else {
-		p.Log().Debug("Dropping transactions propagation", "count", len(txs))
+		p.Log().Info("Dropping transactions propagation", "count", len(txs))
 	}
 }
 
@@ -291,7 +303,7 @@ func (p *peer) AsyncSendTransactionHashes(txids []common.Hash, queue chan broadc
 			p.knownTxs.Pop()
 		}
 	} else {
-		p.Log().Debug("Dropping tx announcement", "count", len(txids))
+		p.Log().Info("Dropping tx announcement", "count", len(txids))
 	}
 }
 
@@ -335,7 +347,7 @@ func (p *peer) AsyncSendEventIDs(ids hash.Events, queue chan broadcastItem) {
 			p.knownEvents.Pop()
 		}
 	} else {
-		p.Log().Debug("Dropping event announcement", "count", len(ids))
+		p.Log().Info("Dropping event announcement", "count", len(ids))
 	}
 }
 

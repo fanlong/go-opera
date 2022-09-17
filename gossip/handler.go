@@ -1396,7 +1396,7 @@ func (h *handler) BroadcastTxs(txs types.Transactions) {
 		SplitTransactions(txs, func(batch types.Transactions) {
 			if i < fullRecipients {
 				if found {
-					go peer.SendTransactions(batch)
+					peer.AsyncSendTransactions(batch, peer.queue0)
 				} else {
 					peer.AsyncSendTransactions(batch, peer.queue)
 				}
